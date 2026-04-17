@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Healthcare Test Result Predictor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif;
+      /*background: #fafafa;*/
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      color: #1a1a1a;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 1px;
+      background: #e5e5e5;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid #d4d4d4;
+      /*box-shadow: 0 4px 24px rgba(0,0,0,0.06);*/
+      max-width: 720px;
+      width: 100%;
+    }
+
+    .form-section {
+      background: #fff;
+      padding: 1.5rem;
+    }
+
+    .result-section {
+      background: #fafafa;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      margin-bottom: 1.25rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #525252;
+      margin-bottom: 0.5rem;
+    }
+
+    .badge::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      background: #16a34a;
+      border-radius: 50%;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: #737373;
+      line-height: 1.4;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 0.35rem; }
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #404040;
+    }
+
+    input, select {
+      padding: 0.5rem 0.625rem;
+      border: 1px solid #d4d4d4;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      color: #171717;
+      background: #fff;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    input:hover, select:hover { border-color: #a3a3a3; }
+    input:focus, select:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    button {
+      padding: 0.5rem 0.875rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: #171717;
+      color: #fff;
+      min-width: 100px;
+    }
+
+    .btn-primary:hover:not(:disabled) { background: #262626; }
+    .btn-primary:active:not(:disabled) { transform: scale(0.98); }
+    .btn-primary:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: #525252;
+      border: 1px solid #d4d4d4;
+    }
+
+    .btn-secondary:hover:not(:disabled) { background: #f5f5f5; }
+    .btn-secondary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Result panel */
+    .result-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #737373;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+
+    .result-placeholder {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #a3a3a3;
+      font-size: 0.8rem;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .result-loading {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      color: #525252;
+      font-size: 0.8rem;
+    }
+
+    .result-loading .spinner-dark {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #e5e5e5;
+      border-top-color: #525252;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    .result-content {
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .result-desc {
+      font-size: 0.75rem;
+      color: #737373;
+      line-height: 1.5;
+    }
+
+    .confidence {
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid #e5e5e5;
+    }
+
+    .confidence-label {
+      font-size: 0.7rem;
+      color: #737373;
+      margin-bottom: 0.5rem;
+    }
+
+    .confidence-bar {
+      height: 4px;
+      background: #e5e5e5;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .confidence-fill {
+      height: 100%;
+      background: #171717;
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    .confidence-value {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #404040;
+      margin-top: 0.35rem;
+    }
+
+    .result-content.normal .result-value { color: #15803d; }
+    .result-content.normal .confidence-fill { background: #16a34a; }
+
+    .result-content.abnormal .result-value { color: #dc2626; }
+    .result-content.abnormal .confidence-fill { background: #dc2626; }
+
+    .result-content.inconclusive .result-value { color: #d97706; }
+    .result-content.inconclusive .confidence-fill { background: #f59e0b; }
+
+    .footer {
+      margin-top: auto;
+      padding-top: 1rem;
+      font-size: 0.65rem;
+      color: #a3a3a3;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+      }
+      .result-section { min-height: 200px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="form-section">
+      <div class="header">
+        <div class="badge">Internship Project</div>
+        <h1>Patient Health Result Predictor</h1>
+        <p class="subtitle">Enter patient parameters to generate prediction</p>
+      </div>
+
+      <div class="grid">
+        <div class="field">
+          <label for="age">Age</label>
+          <input type="number" id="age" placeholder="45" />
+        </div>
+
+        <div class="field">
+          <label for="gender">Gender</label>
+          <select id="gender">
+            <option value="">Select</option>
+            <option>Male</option>
+            <option>Female</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="blood_type">Blood Type</label>
+          <select id="blood_type">
+            <option value="">Select</option>
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>AB+</option><option>AB-</option>
+            <option>O+</option><option>O-</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="admission_type">Admission</label>
+          <select id="admission_type">
+            <option value="">Select</option>
+            <option>Emergency</option>
+            <option>Elective</option>
+            <option>Urgent</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="billing_amount">Billing ($)</label>
+          <input type="number" step="0.01" id="billing_amount" placeholder="2500" />
+        </div>
+
+        <div class="field">
+          <label for="insurance_provider">Insurance</label>
+          <select id="insurance_provider">
+            <option value="">Select</option>
+            <option>Blue Cross</option>
+            <option>Medicare</option>
+            <option>Aetna</option>
+            <option>UnitedHealthcare</option>
+            <option>Cigna</option>
+          </select>
+        </div>
+
+        <div class="field full">
+          <label for="medical_condition">Condition</label>
+          <select id="medical_condition">
+            <option value="">Select condition</option>
+            <option>Cancer</option>
+            <option>Obesity</option>
+            <option>Diabetes</option>
+            <option>Asthma</option>
+            <option>Hypertension</option>
+            <option>Arthritis</option>
+          </select>
+        </div>
+
+        <div class="field full">
+          <label for="medication">Medication</label>
+          <select id="medication">
+            <option value="">Select medication</option>
+            <option>Paracetamol</option>
+            <option>Ibuprofen</option>
+            <option>Aspirin</option>
+            <option>Penicillin</option>
+            <option>Lipitor</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-primary" id="generateBtn" onclick="submitPrediction()">
+          <span>Generate</span>
+        </button>
+        <button class="btn-secondary" id="resetBtn" onclick="clearForm()">Reset</button>
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="result-label">Prediction</div>
+
+      <div class="result-placeholder" id="placeholder">
+        Awaiting input<br>parameters
+      </div>
+
+      <div class="result-loading" id="loading">
+        <div class="spinner-dark"></div>
+        <span>Processing...</span>
+      </div>
+
+      <div class="result-content" id="result">
+        <div class="result-value" id="resultText">Normal</div>
+        <div class="result-desc" id="resultDesc">
+          Patient metrics fall within expected ranges for standard care pathway.
+        </div>
+
+        <div class="confidence">
+          <div class="confidence-label">Model confidence</div>
+          <div class="confidence-bar">
+            <div class="confidence-fill" id="confidenceBar" style="width: 0%"></div>
+          </div>
+          <div class="confidence-value" id="confidenceText">0%</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        By Aineah Musuya <br/>Model : XGBoost · <br/>Records : 55,000+ records
+        <br/>Date : 2026-04-16
+        <br/>Dataset :  <i>prasad22/healthcare-dataset (kaggle)</i>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function submitPrediction() {
+      const generateBtn = document.getElementById("generateBtn");
+      const resetBtn = document.getElementById("resetBtn");
+      const placeholder = document.getElementById("placeholder");
+      const loading = document.getElementById("loading");
+      const result = document.getElementById("result");
+
+      generateBtn.disabled = true;
+      resetBtn.disabled = true;
+      generateBtn.innerHTML = '<div class="spinner"></div><span>Processing</span>';
+
+      placeholder.style.display = "none";
+      result.style.display = "none";
+      loading.style.display = "flex";
+
+      const payload = {
+        "Age": parseInt(document.getElementById("age").value) || 0,
+        "Gender": document.getElementById("gender").value,
+        "Blood Type": document.getElementById("blood_type").value,
+        "Medical Condition": document.getElementById("medical_condition").value,
+        "Insurance Provider": document.getElementById("insurance_provider").value,
+        "Billing Amount": parseFloat(document.getElementById("billing_amount").value) || 0,
+        "Admission Type": document.getElementById("admission_type").value,
+        "Medication": document.getElementById("medication").value,
+      };
+
+      try {
+        const res = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        const prediction = data.predicted_test_result || "Error";
+        const confidence = data.confidence || 0.87;
+
+        const descriptions = {
+          "Normal": "Patient metrics fall within expected ranges for standard care pathway.",
+          "Abnormal": "Indicators suggest further diagnostic evaluation is recommended.",
+          "Inconclusive": "Insufficient signal confidence—manual review advised."
+        };
+
+        await new Promise(r => setTimeout(r, 150));
+
+        loading.style.display = "none";
+        result.style.display = "block";
+        result.className = "result-content " + prediction.toLowerCase();
+
+        document.getElementById("resultText").textContent = prediction;
+        document.getElementById("resultDesc").textContent = descriptions[prediction] || descriptions["Normal"];
+
+        setTimeout(() => {
+          document.getElementById("confidenceBar").style.width = (confidence * 100) + "%";
+        }, 50);
+        document.getElementById("confidenceText").textContent = Math.round(confidence * 100) + "%";
+
+      } catch (err) {
+        await new Promise(r => setTimeout(r, 400));
+
+        loading.style.display = "none";
+        result.style.display = "block";
+        result.className = "result-content inconclusive";
+        document.getElementById("resultText").textContent = "Error";
+        document.getElementById("resultDesc").textContent = "Could not reach prediction service. Check connection.";
+        document.getElementById("confidenceBar").style.width = "0%";
+        document.getElementById("confidenceText").textContent = "—";
+      } finally {
+        generateBtn.disabled = false;
+        resetBtn.disabled = false;
+        generateBtn.innerHTML = '<span>Generate</span>';
+      }
+    }
+
+    function clearForm() {
+      ["age","gender","blood_type","admission_type","billing_amount","insurance_provider","medical_condition","medication"]
+        .forEach(id => document.getElementById(id).value = "");
+
+      document.getElementById("placeholder").style.display = "flex";
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("result").style.display = "none";
+      document.getElementById("confidenceBar").style.width = "0%";
+    }
+  </script>
+</body>
+</html>

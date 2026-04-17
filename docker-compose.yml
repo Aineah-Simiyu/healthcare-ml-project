@@ -1,0 +1,118 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: healthcare
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d healthcare"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  app:
+    build: .
+    ports:
+      - "5001:5000"
+    environment:
+      DB_URL: postgresql://user:password@postgres:5432/healthcare
+      MODEL_PIPELINE_PATH: models/healthcare_model_pipeline.pkl
+      MODEL_PACKAGE_PATH: models/healthcare_model.pkl
+      RAW_PATH: data/raw/healthcare_dataset.csv
+      CLEANED_PATH: scripts/data/cleaned_healthcare.csv
+      KAGGLE_KEY: ${KAGGLE_KEY:-}
+      FLASK_DEBUG: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["/app/scripts/entrypoint.sh"]
+    restart: always
+
+  airflow-init:
+    build: .
+    environment: &airflow-common-env
+      AIRFLOW_HOME: /app/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://user:password@postgres:5432/healthcare
+      AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-api-server:8080/execution/
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET:-change-me-in-production}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+      AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
+      PYTHONPATH: /app
+      DB_URL: postgresql://user:password@postgres:5432/healthcare
+    entrypoint: ["/bin/bash"]
+    command:
+      - -c
+      - |
+        airflow db migrate
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com \
+          --password admin || true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  airflow-api-server:
+    build: .
+    environment:
+      <<: *airflow-common-env
+    ports:
+      - "8080:8080"
+    entrypoint: ["/app/scripts/airflow-entrypoint.sh"]
+    command: ["api-server"]
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  airflow-scheduler:
+    build: .
+    environment:
+      <<: *airflow-common-env
+    entrypoint: ["/app/scripts/airflow-entrypoint.sh"]
+    command: ["scheduler"]
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  airflow-dag-processor:
+    build: .
+    environment:
+      <<: *airflow-common-env
+    entrypoint: ["/app/scripts/airflow-entrypoint.sh"]
+    command: ["dag-processor"]
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8794/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  postgres_data:
