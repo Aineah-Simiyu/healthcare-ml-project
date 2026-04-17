@@ -7,11 +7,13 @@ services:
       POSTGRES_DB: health
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U health_app -d health"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
     restart: always
 
   app:
@@ -41,16 +43,14 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://health_app:password@postgres:5432/health
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__WEBSERVER__BASE_URL: ""
       PYTHONPATH: /app
-      DB_URL: postgresql://health_app:password@postgres:5432/health
     command: >
       bash -c "
-        echo 'Initializing Airflow...' &&
+        echo 'Waiting for postgres...' &&
+        sleep 5 &&
         airflow db migrate &&
         airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true &&
-        echo 'Starting Airflow standalone...' &&
-        airflow standalone
+        exec airflow standalone
       "
     depends_on:
       postgres:
