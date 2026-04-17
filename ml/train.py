@@ -41,6 +41,9 @@ def train() -> None:
     pipeline.fit(X_train, y_train)
     evaluate(pipeline, X_test, y_test, le)
 
+    os.makedirs(os.path.dirname(PIPELINE_PATH), exist_ok=True)
+    os.makedirs(os.path.dirname(PACKAGE_PATH), exist_ok=True)
+
     joblib.dump(pipeline, PIPELINE_PATH)
     joblib.dump({"preprocessor": pipeline.named_steps["preprocessor"], "model": xgb, "label_encoder": le}, PACKAGE_PATH)
 
