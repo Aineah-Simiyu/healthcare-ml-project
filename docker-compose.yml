@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: user
+      POSTGRES_USER: health_app
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: healthcare
+      POSTGRES_DB: health
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,7 +19,7 @@ services:
     ports:
       - "5001:5000"
     environment:
-      DB_URL: postgresql://user:password@postgres:5432/healthcare
+      DB_URL: postgresql://health_app:password@postgres:5432/health
       MODEL_PIPELINE_PATH: models/healthcare_model_pipeline.pkl
       MODEL_PACKAGE_PATH: models/healthcare_model.pkl
       RAW_PATH: data/raw/healthcare_dataset.csv
@@ -41,7 +41,7 @@ services:
       AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-api-server:8080/execution/
       AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET:-change-me-in-production}
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+#      AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
       AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
       PYTHONPATH: /app
       DB_URL: postgresql://user:password@postgres:5432/healthcare
@@ -66,7 +66,7 @@ services:
     environment:
       <<: *airflow-common-env
     ports:
-      - "8080:8080"
+      - "8081:8080"
     entrypoint: ["/app/scripts/airflow-entrypoint.sh"]
     command: ["api-server"]
     depends_on:

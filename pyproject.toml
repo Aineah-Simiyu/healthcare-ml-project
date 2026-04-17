@@ -16,7 +16,9 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "apache-airflow>=3.0.0",
     "kagglehub>=0.2.0",
-    "asyncpg"
+    "asyncpg",
+    "apache-airflow-providers-fab",
+    "apache-airflow-providers-postgres",
 ]
 
 [build-system]
