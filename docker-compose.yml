@@ -24,8 +24,8 @@ services:
       DB_URL: postgresql://health_app:password@postgres:5432/health
       MODEL_PIPELINE_PATH: models/healthcare_model_pipeline.pkl
       MODEL_PACKAGE_PATH: models/healthcare_model.pkl
-      RAW_PATH: data/raw/healthcare_dataset.csv
-      CLEANED_PATH: scripts/data/cleaned_healthcare.csv
+      RAW_PATH: /app/scripts/data/raw/healthcare_dataset.csv
+      CLEANED_PATH: /app/scripts/data/cleaned_healthcare.csv
       KAGGLE_KEY: ${KAGGLE_KEY:-}
       FLASK_DEBUG: "false"
     depends_on:
@@ -44,6 +44,9 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://health_app:password@postgres:5432/health
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       PYTHONPATH: /app
+      RAW_PATH: /app/scripts/data/raw/healthcare_dataset.csv
+      CLEANED_PATH: /app/scripts/data/cleaned_healthcare.csv
+      KAGGLE_KEY: ${KAGGLE_KEY:-}
     command: >
       bash -c "
         echo 'Waiting for postgres...' &&
