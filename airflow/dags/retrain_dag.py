@@ -6,7 +6,7 @@ from ml.train import train
 
 with DAG(
     dag_id="weekly_model_retrain",
-    start_date=datetime(2025, 1, 1),
+    start_date=datetime(2026, 4, 16),
     schedule="0 12 * * 6",
     catchup=False,
     tags=["healthcare", "ml"],
