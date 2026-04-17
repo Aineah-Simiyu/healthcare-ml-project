@@ -33,4 +33,14 @@ except Exception as e:
     sys.exit(1)
 " || python -c "from scripts.ingest import ingest; ingest()"
 
+echo "Checking if model exists..."
+if [ ! -f "$MODEL_PIPELINE_PATH" ]; then
+    echo "Model not found at $MODEL_PIPELINE_PATH, training..."
+    python -m ml.train
+    echo "Model training complete"
+else
+    echo "Model found at $MODEL_PIPELINE_PATH"
+fi
+
+echo "Starting application..."
 exec python -m app.main
