@@ -1,10 +1,16 @@
+import os
+
 import joblib
 import pandas as pd
+from dotenv import load_dotenv
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 
-PIPELINE_PATH = "models/healthcare_model_pipeline.pkl"
-PACKAGE_PATH = "models/healthcare_model.pkl"
+load_dotenv()
+
+
+PIPELINE_PATH = os.getenv("MODEL_PIPELINE_PATH")
+PACKAGE_PATH = os.getenv("MODEL_PACKAGE_PATH")
 
 
 def load_artifacts() -> tuple[Pipeline, LabelEncoder]:
