@@ -1,0 +1,73 @@
+databases:
+  - name: health-db
+    databaseName: health
+    user: health_app
+    plan: free
+
+services:
+  - type: web
+    name: health-app
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    dockerCommand: /app/scripts/entrypoint.sh
+    envVars:
+      - key: DB_URL
+        fromDatabase:
+          name: health-db
+          property: connectionString
+      - key: MODEL_PIPELINE_PATH
+        value: /app/models/healthcare_model_pipeline.pkl
+      - key: MODEL_PACKAGE_PATH
+        value: /app/models/healthcare_model.pkl
+      - key: RAW_PATH
+        value: /app/scripts/data/raw/healthcare_dataset.csv
+      - key: CLEANED_PATH
+        value: /app/scripts/data/cleaned_healthcare.csv
+      - key: FLASK_DEBUG
+        value: "false"
+      - key: KAGGLE_KEY
+        sync: false  # Set this manually in the Render dashboard
+
+  # ── Airflow ────────────────────────────────────────────────────────────────
+  - type: worker
+    name: health-airflow
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    dockerCommand: >-
+      bash -c "
+        export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=$(echo $DB_URL | sed 's|postgresql://|postgresql+psycopg2://|') &&
+        airflow db migrate &&
+        airflow users create
+          --username admin
+          --password admin
+          --firstname Admin
+          --lastname User
+          --role Admin
+          --email admin@example.com || true &&
+        exec airflow standalone
+      "
+    envVars:
+      - key: DB_URL
+        fromDatabase:
+          name: health-db
+          property: connectionString
+      - key: AIRFLOW_HOME
+        value: /app/airflow
+      - key: AIRFLOW__CORE__EXECUTOR
+        value: LocalExecutor
+      - key: AIRFLOW__CORE__LOAD_EXAMPLES
+        value: "false"
+      - key: PYTHONPATH
+        value: /app
+      - key: MODEL_PIPELINE_PATH
+        value: /app/models/healthcare_model_pipeline.pkl
+      - key: MODEL_PACKAGE_PATH
+        value: /app/models/healthcare_model.pkl
+      - key: RAW_PATH
+        value: /app/scripts/data/raw/healthcare_dataset.csv
+      - key: CLEANED_PATH
+        value: /app/scripts/data/cleaned_healthcare.csv
+      - key: KAGGLE_KEY
+        sync: false
