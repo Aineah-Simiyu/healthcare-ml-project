@@ -53,6 +53,14 @@ curl -X POST http://localhost:5000/predict \
 { "predicted_test_result": "Abnormal", "confidence": 0.35}
 ```
 
+## ScreenShots
+Dashbord
+https://ml.quaxt.co.ke
+<img width="728" height="521" alt="image" src="https://github.com/user-attachments/assets/95f81d2d-9808-4687-a5a6-56583c2f2859" />
+
+Airflow Dashboard Runs
+<img width="1371" height="576" alt="image" src="https://github.com/user-attachments/assets/36177880-7b16-43c4-8530-3fb3b73c858a" />
+
 ## Weekly Retraining
 
 Configured via Apache Airflow — runs every Saturday at 12:00 noon.
